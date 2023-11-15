@@ -43,7 +43,7 @@ This project is a simple Flask application that provides API endpoints for handl
 1. Run the unit tests:
 
    ```bash
-   python test_api.py
+   python test-api.py
    ```
 
    Ensure that the Flask application is not running while executing the tests.
