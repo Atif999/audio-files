@@ -1,0 +1,124 @@
+### API Documentation
+
+This document provides details on the API endpoints for the Flask Audio API.
+
+#### Base URL
+
+The base URL for all API endpoints is `http://127.0.0.1:5000/` unless configured differently.
+
+#### Authentication
+
+All endpoints require basic authentication using the following credentials:
+
+- Username: `admin`
+- Password: `secret`
+
+### 1. Fetch Audio Data
+
+#### Endpoint
+
+- **URL:** `/audio/<int:audio_id>`
+- **Method:** `GET`
+- **Authentication:** Required
+
+#### Parameters
+
+- `audio_id` (integer): The unique identifier of the audio file.
+
+#### Response
+
+- **Status Code:**
+
+  - 200 OK: Successful request
+  - 404 Not Found: Audio not found
+
+- **Body (JSON):**
+
+  - Successful Response:
+
+    ```json
+    {
+      "id": 1,
+      "filename": "example.wav",
+      "data": "base64_encoded_audio_data"
+    }
+    ```
+
+  - Error Response (404):
+    ```json
+    {
+      "error": "Audio not found"
+    }
+    ```
+
+### 2. Post Audio Data
+
+#### Endpoint
+
+- **URL:** `/audio`
+- **Method:** `POST`
+- **Authentication:** Required
+
+#### Parameters
+
+- `file` (file): The audio file to be uploaded.
+
+#### Response
+
+- **Status Code:**
+
+  - 201 Created: Successful upload
+  - 400 Bad Request: Missing or invalid file
+
+- **Body (JSON):**
+
+  - Successful Response:
+
+    ```json
+    {
+      "id": 2,
+      "filename": "new_audio.wav",
+      "data": "base64_encoded_audio_data"
+    }
+    ```
+
+  - Error Response (400):
+    ```json
+    {
+      "error": "No file part"
+    }
+    ```
+
+### 3. Fetch Audio File
+
+#### Endpoint
+
+- **URL:** `/audio/<int:audio_id>?file=true`
+- **Method:** `GET`
+- **Authentication:** Required
+
+#### Parameters
+
+- `audio_id` (integer): The unique identifier of the audio file.
+
+#### Response
+
+- **Status Code:**
+
+  - 200 OK: Successful request
+  - 404 Not Found: Audio not found
+
+- **Body:**
+
+  - Successful Response: Audio file (binary)
+
+  - Error Response (404):
+    ```json
+    {
+      "error": "Audio not found"
+    }
+    ```
+
+### Notes
+
+- The `file` parameter in the `/audio` endpoint expects a file upload with the key `file`.
