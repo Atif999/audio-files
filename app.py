@@ -3,9 +3,14 @@ from flask_httpauth import HTTPBasicAuth
 import sqlite3
 import base64
 from io import BytesIO
+import logging
+
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
+
+# For logging errors
+logging.basicConfig(filename='app.log', level=logging.INFO)
 
 # Hard-coded credentials for basic authentication
 USERNAME = 'admin'
@@ -54,44 +59,52 @@ init_db()
 @app.route('/audio/<int:audio_id>', methods=['GET'])
 @auth.login_required
 def get_audio(audio_id):
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute('SELECT id, filename, data FROM audio WHERE id = ?', (audio_id,))
-    audio = cursor.fetchone()
-    if audio:
-        if 'file' in request.args and request.args['file'].lower() == 'true':
-            audio_bytes = base64.b64decode(audio[2])
-            return send_file(BytesIO(audio_bytes), mimetype='audio/wav', as_attachment=True, download_name=audio[1])
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute('SELECT id, filename, data FROM audio WHERE id = ?', (audio_id,))
+        audio = cursor.fetchone()
+        if audio:
+            if 'file' in request.args and request.args['file'].lower() == 'true':
+                audio_bytes = base64.b64decode(audio[2])
+                return send_file(BytesIO(audio_bytes), mimetype='audio/wav', as_attachment=True, download_name=audio[1])
+            else:
+                audio_dict = {'id': audio[0], 'filename': audio[1], 'data': audio[2]}
+                return jsonify(audio_dict)
         else:
-            audio_dict = {'id': audio[0], 'filename': audio[1], 'data': audio[2]}
-            return jsonify(audio_dict)
-    else:
-        return jsonify({'error': 'Audio not found'}), 404
+            return jsonify({'error': 'Audio not found'}), 404
+    except Exception as e:
+        logging.error(f'Error in get_audio: {str(e)}')
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 # Endpoint for posting audio data
 @app.route('/audio', methods=['POST'])
 @auth.login_required
 def post_audio():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
 
-    audio_data = {
-        'filename': file.filename,
-        'data': base64.b64encode(file.read()).decode('utf-8')
-    }
+        audio_data = {
+            'filename': file.filename,
+            'data': base64.b64encode(file.read()).decode('utf-8')
+        }
 
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute('INSERT INTO audio (filename, data) VALUES (?, ?)', (audio_data['filename'], audio_data['data']))
-    db.commit()
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute('INSERT INTO audio (filename, data) VALUES (?, ?)', (audio_data['filename'], audio_data['data']))
+        db.commit()
 
-    audio_id = cursor.lastrowid
+        audio_id = cursor.lastrowid
 
-    return jsonify({'id': audio_id, 'filename': audio_data['filename']}), 201
+        return jsonify({'id': audio_id, 'filename': audio_data['filename']}), 201
+    except Exception as e:
+        logging.error(f'Error in post_audio: {str(e)}')
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
